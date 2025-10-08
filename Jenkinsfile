@@ -10,6 +10,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 git branch: 'main', url: 'https://github.com/rebearteta/DVWA'
+            }
         }
         stage('Semgrep Scan') {
             steps {
