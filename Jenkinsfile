@@ -1,17 +1,6 @@
 pipeline {
     agent none
-    environment {
-        // Define Semgrep token as a Jenkins credential
-        SEMGREP_APP_TOKEN = credentials('SEMGREP_APP_TOKEN') 
-        // Optional: For diff-aware scans in PRs/MRs
-        // SEMGREP_BASELINE_REF = "origin/main" 
-    }
     stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'main', url: 'https://github.com/rebearteta/DVWA'
-            }
-        }
         stage('Semgrep Scan') {
             steps {
                 script {
