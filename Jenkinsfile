@@ -1,16 +1,46 @@
 pipeline {
     agent none
     stages {
-        stage('Semgrep Scan') {
-            steps {
-                script {
-                    // Run Semgrep using a Docker image
-                    sh """
-                        docker run --rm -v \$(pwd):/src returnto/semgrep:latest \
-                        semgrep --config auto --json --output semgrep_results.json /src
-                    """
-                }
+        stage('Setup Python env') {
+            agent {
+                docker { image 'python:3.11' } 
             }
+            steps {
+                sh '''
+                  python -V
+                  python -m venv .venv
+                  . .venv/bin/activate
+                  python -m pip install --upgrade pip
+                  pip install -r requirements.txt
+                  pip install safety
+                '''
+              }
+        }
+        stage('Safety') {
+            agent {
+                docker { image 'python:3.11' } 
+            }
+            steps {
+                sh '''
+                  set -e
+                  . .venv/bin/activate
+        
+                  # Informe legible en consola (no detiene el job por sí solo)
+                  safety check --file=requirements.txt --full-report || true
+        
+                  # Genera JSON y captura exit code para decidir el resultado
+                  set +e
+                  safety check --file=requirements.txt --output json > safety-report.json
+                  STATUS=$?
+                  set -e
+        
+                  # Falla el build si hubo vulnerabilidades
+                  if [ "$STATUS" -ne 0 ]; then
+                    echo "Safety encontró vulnerabilidades. Revisa safety-report.json"
+                    exit 1
+                  fi
+                '''
+              }
         }
         stage('Compilation') {
             agent {
